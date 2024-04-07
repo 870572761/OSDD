@@ -70,7 +70,7 @@ class Tracker1:
         self.output_boxes = []  # 存储结果
         self.loop_flag = 0  # self.loop_flag 变量用于跟踪当前的视频帧位置。
         self.tracker = None
-        self.pic = []
+        self.pic = [] #图片结果
         self.control = []
         self.img_name = []
         self.display_name = ""
@@ -244,6 +244,8 @@ class Tracker1:
         # print(cv.getTrackbarPos("start", display_name))
 
     def update_pic(self, display_name):  # 移动画面到那一帧
+        if cv.getTrackbarPos("start", display_name) >= self.frames-1:
+            cv.setTrackbarPos("start", display_name, self.frames-1)
         frame_s = self.pic[cv.getTrackbarPos("start", display_name)]
         frame_e = []
         return frame_s, frame_e
@@ -393,8 +395,18 @@ class Tracker1:
 
         def nothing(emp):
             pass
-
-        self.frames = int(self.cap.get(cv.CAP_PROP_FRAME_COUNT))
+        
+        key = None
+        i = 0
+        while success:
+            if success:
+                if i % 100 == 0:
+                    print("Loading",i)
+                self.pic.append(frame)
+                i += 1
+            success, frame = self.cap.read()
+            
+        self.frames = i #describe number of pictures
         print("一共有：", self.frames)
         cv.createTrackbar("start", display_name, 0, self.frames - 1, nothing)  # 创建进度条
         cv.createTrackbar(
@@ -406,7 +418,7 @@ class Tracker1:
         )  # 创建进度条
         if self.img_name == []:  # 输入到是视频的话
             self.img_name = [x for x in range(self.frames)]
-        if success is not True:
+        if len(self.pic) == 0:
             print("Read frame from {} failed.".format(videofilepath))
             exit(-1)
         if optional_box is not None:
@@ -415,11 +427,6 @@ class Tracker1:
             assert len(optional_box) == 4, "valid box's foramt is [x,y,w,h]"
             self.tracker.initialize(frame, {"init_bbox": optional_box})
             self.output_boxes.append(optional_box)
-
-        key = None
-        while success:
-            self.pic.append(frame)
-            success, frame = self.cap.read()
 
         self.results_dir = os.path.join(
             os.path.dirname(os.path.abspath(videofilepath)), "label"
@@ -512,12 +519,14 @@ class Tracker1:
 
         if save_results:
             print(base_results_path)
-
             with open(bbox_file, "w") as file:
                 # 将列表中的每个元素转换为字符串并写入文件
                 for item in self.output_boxes:
                     file.write(" ".join(map(str, item)))
                     file.write("\n")
+            print("Save pictures")
+        return self.pic,self.output_boxes
+
 
     def get_parameters(self):
         """Get parameters."""

@@ -25,13 +25,14 @@ def run_video(
         debug: Debug level.
     """
     tracker = Tracker1(tracker_name, tracker_param, "video")
-    tracker.run_lhd(
+    pic,item = tracker.run_lhd(
         videofilepath=videofile,
         optional_box=optional_box,
         debug=debug,
         save_results=save_results,
         img_name=img_name,
     )
+    return pic,item
 
 
 import cv2
@@ -108,7 +109,7 @@ def main():
             args.class_name + ".mp4",
         )
         img_name = images_to_video(args.imagedir, args.videofile, 25)
-    run_video(
+    pic,items = run_video(
         args.tracker_name,
         args.tracker_param,
         args.videofile,
@@ -117,6 +118,14 @@ def main():
         args.debug,
         args.save_results,
     )
+    pic_save_path = os.path.dirname(args.videofile)
+    if args.video:#保存图片
+        for (name,img) in zip(items,pic):
+            name = name[0]
+            if name %100==0:
+                print("Save",name)
+            img_path = os.path.join(pic_save_path,str(name)+'.jpg')
+            cv2.imwrite(img_path, img)
 
 
 if __name__ == "__main__":
